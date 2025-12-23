@@ -9,13 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/components/theme-provider";
-import { useBarcodes } from "@/hooks/use-barcodes";
+import { useBarcodeStore } from "@/store/barcode-store";
 import { Moon, Sun, Upload, Download, Settings } from "lucide-react";
 import { useRef } from "react";
 
 export function SettingsDialog() {
   const { theme, setTheme } = useTheme();
-  const { exportBarcodes, importBarcodes } = useBarcodes();
+  const exportBarcodes = useBarcodeStore((state) => state.exportBarcodes);
+  const importBarcodes = useBarcodeStore((state) => state.importBarcodes);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {

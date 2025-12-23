@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useBarcodes } from "@/hooks/use-barcodes";
+import { useBarcodeStore } from "@/store/barcode-store";
 import { Trash2, Edit, Search } from "lucide-react";
 import type { BarcodeItem } from "@/types";
 import Barcode from "react-barcode";
@@ -20,7 +20,8 @@ interface BarcodeLibraryProps {
 }
 
 export function BarcodeLibrary({ onLoad }: BarcodeLibraryProps) {
-  const { barcodes, deleteBarcode } = useBarcodes();
+  const barcodes = useBarcodeStore((state) => state.barcodes);
+  const deleteBarcode = useBarcodeStore((state) => state.deleteBarcode);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 

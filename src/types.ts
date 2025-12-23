@@ -1,5 +1,16 @@
+export type BarcodeFormat = 
+  | "CODE128" 
+  | "CODE39" 
+  | "EAN13" 
+  | "EAN8" 
+  | "UPC" 
+  | "ITF14" 
+  | "MSI" 
+  | "pharmacode" 
+  | "codabar";
+
 export interface BarcodeConfig {
-  format: "EAN13";
+  format: BarcodeFormat;
   width: number;
   height: number;
   displayValue: boolean;
@@ -22,7 +33,7 @@ export interface BarcodeItem {
 }
 
 export const DEFAULT_CONFIG: BarcodeConfig = {
-  format: "EAN13",
+  format: "CODE128",
   width: 2,
   height: 100,
   displayValue: true,

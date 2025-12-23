@@ -7,10 +7,11 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { generateEAN13, validateEAN13, calculateChecksum } from "@/lib/ean13";
-import { useBarcodes } from "@/hooks/use-barcodes";
-import { type BarcodeConfig, DEFAULT_CONFIG, type BarcodeItem } from "@/types";
+import { useBarcodeStore } from "@/store/barcode-store";
+import { type BarcodeConfig, DEFAULT_CONFIG, type BarcodeItem, type BarcodeFormat } from "@/types";
 import { Download, Save, RefreshCw, Settings2, Plus, Copy } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import {
   Select,
   SelectContent,
@@ -33,15 +34,33 @@ interface BarcodeGeneratorProps {
 }
 
 export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
-  const { addBarcode, updateBarcode } = useBarcodes();
-  const [code, setCode] = useState(initialItem?.code || generateEAN13());
-  const [config, setConfig] = useState<BarcodeConfig>(initialItem?.config || DEFAULT_CONFIG);
+  const addBarcode = useBarcodeStore((state) => state.addBarcode);
+  const updateBarcode = useBarcodeStore((state) => state.updateBarcode);
+  
+  // Load persisted format or use default
+  const getInitialConfig = (): BarcodeConfig => {
+    if (initialItem?.config) return initialItem.config;
+    
+    const savedFormat = localStorage.getItem("barcode-format");
+    if (savedFormat) {
+      return { ...DEFAULT_CONFIG, format: savedFormat as BarcodeFormat };
+    }
+    return DEFAULT_CONFIG;
+  };
+  
+  const [code, setCode] = useState(initialItem?.code || "SAMPLE123");
+  const [config, setConfig] = useState<BarcodeConfig>(getInitialConfig());
   const [showConfig, setShowConfig] = useState(!!initialItem);
   const [editingId, setEditingId] = useState<string | null>(initialItem?.id || null);
   const [selectedPrefix, setSelectedPrefix] = useState("789");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [barcodeName, setBarcodeName] = useState("");
   const barcodeRef = useRef<HTMLDivElement>(null);
+
+  // Persist format to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("barcode-format", config.format);
+  }, [config.format]);
 
   // Reset when initialItem changes
   useEffect(() => {
@@ -54,22 +73,49 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
     }
   }, [initialItem]);
 
+  // Update code when format changes to a compatible value
+  useEffect(() => {
+    // Don't auto-change if editing or if code is already valid for format
+    if (editingId) return;
+    
+    if (config.format === "EAN13" && !validateEAN13(code)) {
+      setCode(generateEAN13(selectedPrefix));
+    } else if (config.format === "EAN8" && (code.length !== 8 || !/^\d{8}$/.test(code))) {
+      setCode(Math.random().toString().slice(2, 9) + "0");
+    } else if (config.format === "UPC" && (code.length !== 12 || !/^\d{12}$/.test(code))) {
+      setCode(Math.random().toString().slice(2, 13) + "0");
+    } else if (["CODE128", "CODE39", "codabar"].includes(config.format) && /^\d{8,13}$/.test(code)) {
+      // If switching from numeric format to text format, provide a text example
+      setCode("SAMPLE" + Math.floor(Math.random() * 1000));
+    }
+  }, [config.format]);
+
   const handleGenerate = () => {
-    setCode(generateEAN13(selectedPrefix));
-    setEditingId(null); // New code means new item
+    if (config.format === "EAN13") {
+      setCode(generateEAN13(selectedPrefix));
+    } else if (config.format === "EAN8") {
+      setCode(Math.random().toString().slice(2, 9) + "0");
+    } else {
+      setCode("SAMPLE" + Math.floor(Math.random() * 10000));
+    }
+    setEditingId(null);
     setBarcodeName("");
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, "").slice(0, 13);
-    setCode(val);
+    const val = e.target.value;
+    if (config.format === "EAN13" || config.format === "EAN8" || config.format === "UPC") {
+      setCode(val.replace(/\D/g, "").slice(0, config.format === "EAN13" ? 13 : config.format === "EAN8" ? 8 : 12));
+    } else {
+      setCode(val.slice(0, 80));
+    }
   };
 
-  const isValid = validateEAN13(code);
+  const isValid = config.format === "EAN13" ? validateEAN13(code) : code.length > 0;
 
   const handleSave = () => {
     if (!isValid) {
-      toast.error("Invalid EAN-13 code");
+      toast.error("Invalid barcode");
       return;
     }
     
@@ -85,7 +131,7 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
       });
       toast.success("Barcode updated");
     } else {
-      setBarcodeName(`EAN-13 ${code}`);
+      setBarcodeName(`${config.format} ${code}`);
       setSaveDialogOpen(true);
     }
   };
@@ -95,17 +141,28 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
     addBarcode({
       id: newId,
       code,
-      name: barcodeName || `EAN-13 ${code}`,
+      name: barcodeName || `${config.format} ${code}`,
       createdAt: Date.now(),
       config,
     });
-    setEditingId(newId);
     setSaveDialogOpen(false);
-    toast.success("Barcode saved to library");
+    toast.success(`"${barcodeName || code}" saved to library`);
+    
+    // Confetti celebration
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    
+    // Generate new barcode after saving
+    handleGenerate();
+    setEditingId(null);
+    setBarcodeName("");
   };
 
   const handleNew = () => {
-    setCode(generateEAN13(selectedPrefix));
+    setCode("SAMPLE123");
     setConfig(DEFAULT_CONFIG);
     setEditingId(null);
     setShowConfig(false);
@@ -136,7 +193,7 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `ean13-${code}.svg`;
+    link.download = `barcode-${config.format}-${code}.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -148,26 +205,46 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
        <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-2 items-end">
              <div className="grid w-full gap-1.5">
-                <Label htmlFor="code">EAN-13 Code {editingId ? "(Editing)" : ""}</Label>
                 <div className="flex gap-2">
-                  <Select value={selectedPrefix} onValueChange={setSelectedPrefix}>
-                    <SelectTrigger className="w-[110px]" title="Prefix for random generation">
-                      <SelectValue placeholder="Prefix" />
+                  <Select 
+                    value={config.format} 
+                    onValueChange={(v: BarcodeFormat) => setConfig({...config, format: v})}
+                  >
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {COUNTRY_PREFIXES.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="CODE128">Code 128</SelectItem>
+                      <SelectItem value="CODE39">Code 39</SelectItem>
+                      <SelectItem value="EAN13">EAN-13</SelectItem>
+                      <SelectItem value="EAN8">EAN-8</SelectItem>
+                      <SelectItem value="UPC">UPC</SelectItem>
+                      <SelectItem value="ITF14">ITF-14</SelectItem>
+                      <SelectItem value="MSI">MSI</SelectItem>
+                      <SelectItem value="pharmacode">Pharmacode</SelectItem>
+                      <SelectItem value="codabar">Codabar</SelectItem>
                     </SelectContent>
                   </Select>
+                  {config.format === "EAN13" && (
+                    <Select value={selectedPrefix} onValueChange={setSelectedPrefix}>
+                      <SelectTrigger className="w-[100px]" title="Country prefix">
+                        <SelectValue placeholder="Prefix" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRY_PREFIXES.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <Input 
                     id="code" 
                     value={code} 
                     onChange={handleCodeChange} 
                     className="text-lg font-mono tracking-widest flex-1"
-                    maxLength={13}
+                    placeholder={config.format === "CODE128" || config.format === "CODE39" ? "Enter text or numbers" : "Enter code"}
                   />
                 </div>
              </div>
@@ -184,7 +261,7 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
              </div>
           </div>
           
-          {!isValid && code.length === 13 && (
+          {config.format === "EAN13" && !isValid && code.length === 13 && (
              <p className="text-destructive text-sm">Invalid Checksum. Expected: {calculateChecksum(code.slice(0,12))}</p>
           )}
        </div>
@@ -193,8 +270,8 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
        <Card className="overflow-hidden flex justify-center items-center p-8 bg-white dark:bg-zinc-900 transition-colors border-2 border-dashed min-h-[200px]">
           <div ref={barcodeRef} className="bg-white p-4 rounded-xl">
              <Barcode 
-               value={code}
-               format="EAN13"
+               value={code || "SAMPLE"}
+               format={config.format}
                width={config.width}
                height={config.height}
                displayValue={config.displayValue}

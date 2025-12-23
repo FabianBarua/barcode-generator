@@ -20,7 +20,7 @@ function App() {
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <header className="border-b p-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-             <h1 className="text-xl font-bold tracking-tight">EAN-13 Generator</h1>
+             <h1 className="text-xl font-bold tracking-tight">Barcode Generator</h1>
           </div>
           <div className="flex items-center gap-2">
              <BarcodeLibrary onLoad={handleLoadItem} />
