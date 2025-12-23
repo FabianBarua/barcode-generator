@@ -67,7 +67,7 @@ export function BarcodeLibrary({ onLoad }: BarcodeLibraryProps) {
             {filteredBarcodes.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col gap-2 border p-4 rounded-lg"
+                className="flex flex-col gap-2 border p-4 rounded-4xl"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -94,7 +94,7 @@ export function BarcodeLibrary({ onLoad }: BarcodeLibraryProps) {
                     </Button>
                   </div>
                 </div>
-                <div className="bg-white p-2 rounded flex justify-center overflow-hidden">
+                <div className="bg-white p-2 rounded-4xl flex justify-center overflow-hidden">
                    <Barcode 
                      value={item.code}
                      {...item.config}

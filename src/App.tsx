@@ -31,6 +31,19 @@ function App() {
         <main className="flex-1 flex flex-col justify-center p-4">
            <BarcodeGenerator key={generatorKey} initialItem={currentItem} />
         </main>
+        
+        <footer className="py-6 text-center text-sm text-muted-foreground">
+          Created by{" "}
+          <a 
+            href="https://fabianbarua.vercel.app/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-primary transition-colors"
+          >
+            Fabian Barua
+          </a>
+        </footer>
+
         <Toaster />
       </div>
     </ThemeProvider>

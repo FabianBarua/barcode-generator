@@ -191,7 +191,7 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
 
        {/* Preview */}
        <Card className="overflow-hidden flex justify-center items-center p-8 bg-white dark:bg-zinc-900 transition-colors border-2 border-dashed min-h-[200px]">
-          <div ref={barcodeRef} className="bg-white p-4 rounded-lg">
+          <div ref={barcodeRef} className="bg-white p-4 rounded-xl">
              <Barcode 
                value={code}
                format="EAN13"
