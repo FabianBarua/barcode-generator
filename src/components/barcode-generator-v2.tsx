@@ -289,7 +289,7 @@ export function BarcodeGenerator({ initialItem }: BarcodeGeneratorProps) {
 
        {/* Actions */}
        <div className="flex gap-2 justify-center flex-wrap">
-          <Button onClick={() => setShowConfig(!showConfig)} variant="ghost">
+          <Button onClick={() => setShowConfig(!showConfig)} variant="outline">
              <Settings2 className="mr-2 h-4 w-4" /> Customize
           </Button>
           <Button onClick={handleSave} disabled={!isValid}>
