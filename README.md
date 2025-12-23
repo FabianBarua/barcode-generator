@@ -139,17 +139,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Radix UI](https://www.radix-ui.com/) for accessible component primitives
 - [Vercel](https://vercel.com/) for hosting
 
-## 📸 Screenshots
-
-### Light Mode
-![Light Mode](screenshots/light-mode.png)
-
-### Dark Mode
-![Dark Mode](screenshots/dark-mode.png)
-
-### Library Management
-![Library](screenshots/library.png)
-
 ---
 
 Made with ❤️ by [Fabian Barua](https://fabianbarua.vercel.app/)
